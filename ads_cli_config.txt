@@ -1,0 +1,10 @@
+[SEARCH]
+bib_style = aastex
+
+[INTERFACE]
+num_lines_abs = 3
+num_cols = 72
+
+[API]
+api_key = tRGMePV476vTyaMPRTrQhiKqCp0Zqbgf1dsNmcln
+
