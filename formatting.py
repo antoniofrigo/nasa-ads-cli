@@ -1,5 +1,46 @@
 import textwrap as tw
+import subprocess
+import sys
+import os
 # Specially formatted prints
+
+def init_art():
+    # Nice and pretty ASCII art on initialization
+    art = [
+    "                   **********                                           ",
+    "                 **************                                         ",
+    "                ****         ****                                       ",
+    "                **             ***   *            *****                 ",
+    "                **              **                      ***             ",
+    "                **             ***                          **          ",
+    "                ***           ***  ****************          **        ",
+    "                ******    ******   *********************        **      ",
+    "                   ************  ****((((((((((/**********        **    ",
+    "                 *   ****** *****(((((//////////////********       **   ",
+    "                *       *******((////           ////((*******       **  ",
+    "               **      ******((////               /(((((******       ** ",
+    "               *      ******((////     //////     ((((///******      ** ",
+    "              **      ******((/////////           ((/////******       * ",
+    "              **      ******((/////       //(     ///////******       * ",
+    "               *      ******((////     /(((((     ///////******      ** ",
+    "                      *******((///                //////******       ** ",
+    "                       *******((((((       (//     ////******/      **  ",
+    "                  *  ***/*******((((((((((///////////*******       **   ",
+    "             /*******///   ********/(((///////////********        **    ",
+    "          **********//       ***************************        **      ",
+    "      ***********///             *******************          **        ",
+    "  ***********///                                            **          ",
+    "  *******///               ***                          ***             ",
+    "   /////                       *****              ****/                 ",
+    "                                         ***                            "]
+
+    print("\n")
+    for line in art:
+        print(line)
+    print("\n")
+    print_load("An Unofficial Command Line Interface for NASA/ADS", 72,
+               fill = " ", text_color = 'WARNING')
+    print("\n")
 
 def color(text, color):
     # Colors text using terminal codes
@@ -14,8 +55,36 @@ def color(text, color):
              'BOLD'   : '\033[1m' ,
              'ITALIC' : '\033[3m' ,
              'UNDERLINE': '\033[4m',
+             'NONE': '',
              }
     return "{0}{1}{2}".format(codes[color],text,codes['ENDC'])
+
+def copy_to_clipboard(text, width, clipboard):
+    # Handles clipboards for different operating systems
+    # Windows is not supported.
+    flag = 0
+    if sys.platform.startswith('freebsd'):
+        process = subprocess.Popen(['xclip', '-selection', clipboard],
+                             stdin=subprocess.PIPE, close_fds=True)
+        process.communicate(input=text.encode('utf-8'))
+    elif sys.platform.startswith('linux'):
+        process = subprocess.Popen(['xclip', '-selection', 'clipboard'],
+                             stdin=subprocess.PIPE, close_fds=True)
+        process.communicate(input=text.encode('utf-8'))
+    elif sys.platform.startswith('win32'):
+        print_warning("Windows is not supported.", width)
+        flag = 1
+    elif sys.platform.startswith('cygwin'):
+        print_warning("Cygwin is not supported.", width)
+        flag = 1
+    elif sys.platform.startswith('darwin'):
+        process = subprocess.Popen(['pbcopy', 'w'],
+                             stdin=subprocess.PIPE, close_fds=True)
+        process.communicate(input=text.encode('utf-8'))
+    else:
+        print_warning("OS not supported.", width)
+        flag = 1
+    return flag
 
 def print_done(text, width):
     # Job competed message
@@ -29,11 +98,23 @@ def print_fail(text, width):
     dots = "." * (width - len(text) - len("\t".expandtabs()) - 6)
     print("\t" + text + dots + fail)
 
-def print_load(text, width):
+def print_load(text, width, fill="-", text_color='NONE'):
     # Prints bar of hyphens with text centered
-    left = "-" * ((width - len(text))//2)
-    right = "-" * (width - len(text) - len(left))
-    print(left + text.upper() + right)
+    left = fill * ((width - len(text))//2)
+    right = fill * (width - len(text) - len(left))
+    print(left + color(text.upper(), text_color) + right)
+
+def print_warning(text, width):
+    # Prints error message
+    text = "WARNING: " + text
+    text = color(text.center(width, " "), "WARNING")
+    print(text)
+
+def print_error(text, width):
+    # Prints error message
+    text = "ERROR: " + text
+    text = color(text.center(width, " "), "FAIL")
+    print(text)
 
 def shorten_end(text_list, width, num_item):
     # Clips the enter of wrapped paragraph and adds placeholder if needed
@@ -45,12 +126,23 @@ def shorten_end(text_list, width, num_item):
                                    placeholder="") + placeholder
     return text_list
 
-def print_bibliography(response, width):
+def print_bibliography(response, width, clipboard, single_line, term_show):
     msg = response['msg']
-    export = tw.fill(response['export'])
-    print_done("Fetching bibliography", width = width)
-    print_done("Copying to clipboard", width = width)
-    print(export)
+    if not single_line:
+        export = tw.fill(response['export'])
+    else:
+        export = response['export']
+    print_done("Fetching bibliography", width)
+
+    flag = copy_to_clipboard(export, width, clipboard)
+    if flag ==  0:
+        print_done("Copying to clipboard", width)
+    elif flag ==  1:
+        print_fail("Copying to clipboard", width)
+
+    if term_show:
+        print_load("Bibliography Entry", width, fill=" ", text_color="UNDERLINE")
+        print(export)
 
 
 def print_article(article, index, max_ind, show, width):
@@ -106,3 +198,11 @@ def print_article(article, index, max_ind, show, width):
     output = num + title + author + abstract + citation_date + "\n"
     print(output)
 
+def split_cmd_input(result):
+    text  = result.strip('0123456789')
+    l_ind = len(result) - len(result.lstrip('0123456789'))
+    r_ind = l_ind + len(text)
+    left =  result[0:l_ind]
+    right = result[r_ind:]
+
+    return left, text, right
