@@ -1,4 +1,5 @@
 ```
+                     AN UNOFFICIAL COMMAND LINE INTERFACE FOR NASA/ADS   
                    **********                                           
                  **************                                         
                 ****         ****                                       
@@ -25,10 +26,9 @@
   *******///               ***                          ***             
    /////                       *****              ****/                 
                                          ***                            
-
-
-           AN UNOFFICIAL COMMAND LINE INTERFACE FOR NASA/ADS   
 ```
+![](readme/ads_cli.gif)
+
 *Getting a bibliography reference should not require a web browser...*
 
 ### Usage Instructions
